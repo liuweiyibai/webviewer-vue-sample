@@ -13,9 +13,11 @@ export default {
     const viewer = ref(null);
     onMounted(() => {
       const path = `${process.env.BASE_URL}webviewer`;
-      WebViewer({ path, initialDoc: props.initialDoc }, viewer.value);
+      WebViewer({ path, initialDoc: props.initialDoc }, viewer.value).then(instance=>{
+         instance.setLanguage('zh_cn');
+         instance.enableElements(['bookmarksPanel', 'bookmarksPanelButton']);
+      });
     });
-
     return {
       viewer,
     };
