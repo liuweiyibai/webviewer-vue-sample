@@ -1,27 +1,48 @@
 <template>
-  <div id="webviewer" ref="viewer">
-    <a href="javascript:void(0);" class="save-btn" @click="handleSave"
-      >保存阅读进度</a
-    >
-  </div>
+  <div id="webviewer" ref="viewer"></div>
 </template>
 
 <script>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, onBeforeUnmount, onBeforeUpdate } from 'vue';
 import WebViewer from '@pdftron/webviewer';
 
 export default {
   name: 'WebViewer',
-  props: { initialDoc: { type: String } },
+  props: {
+    initialDoc: { type: String, default: '' },
+    docName: { type: String },
+  },
   setup(props) {
     const viewer = ref(null);
+    const docHref = `https://clearlywind.com/pdf/${props.initialDoc}`;
     const appInstance = ref(null);
+    const handleSave = (e) => {
+      if (!(e.keyCode === 83 && (e.ctrlKey || e.metaKey))) {
+        return;
+      }
+
+      e.preventDefault();
+
+      let page = appInstance.value.getCurrentPageNumber();
+      let data = {
+        docName: props.docName,
+        page,
+      };
+      console.log(data);
+    };
+
+    const setDocCurrentPage = (currentPage) => {
+      if (currentPage) {
+        appInstance.value.setCurrentPage(currentPage);
+      }
+    };
+
     onMounted(() => {
       const path = `${process.env.BASE_URL}webviewer`;
-      WebViewer({ path, initialDoc: props.initialDoc }, viewer.value).then(
+      WebViewer({ path, initialDoc: docHref }, viewer.value).then(
         (instance) => {
           appInstance.value = instance;
-          const { docViewer, iframeWindow } = instance;
+          const { iframeWindow } = instance;
           instance.setLanguage('zh_cn');
           instance.enableElements(['bookmarksPanel', 'bookmarksPanelButton']);
           iframeWindow.addEventListener('userBookmarksChanged', (e) => {
@@ -29,17 +50,23 @@ export default {
             const bookmarksString = JSON.stringify(bookmarks);
             console.log(`添加书签::${JSON.stringify(bookmarksString)}`);
           });
+          window.addEventListener('keydown', handleSave);
 
-          setTimeout(() => {
-            docViewer.setCurrentPage(20);
-          }, 2000);
+          setDocCurrentPage();
         }
       );
     });
+    onBeforeUpdate(() => {
+      const docHref = `https://clearlywind.com/pdf/${props.initialDoc}`;
+      if (appInstance.value) {
+        appInstance.value.loadDocument(docHref);
+      }
+    });
 
-    const handleSave = () => {
-      console.log(appInstance.value.getCurrentPageNumber());
-    };
+    onBeforeUnmount(() => {
+      window.removeEventListener('keydown', handleSave);
+    });
+
     return {
       viewer,
       handleSave,
@@ -51,6 +78,10 @@ export default {
 <style>
 #webviewer {
   height: 100vh;
+  display: inline-block;
+  width: calc(100% - 300px);
+  margin-left: 300px;
+  box-shadow: 1px 1px 10px #999;
 }
 .save-btn {
   z-index: 10000;

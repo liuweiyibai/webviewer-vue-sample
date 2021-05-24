@@ -1,4 +1,7 @@
-import { createApp } from 'vue'
-import App from './App.vue'
-
-createApp(App).mount('#app')
+import { createApp } from 'vue';
+import App from './App.vue';
+import { Select } from 'ant-design-vue';
+createApp(App)
+  .use(Select)
+  .use(Select.Option)
+  .mount('#app');
